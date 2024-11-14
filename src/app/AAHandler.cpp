@@ -42,13 +42,16 @@ void AAHandler::mediaMetadataUpdate(const aasdk::proto::messages::MediaInfoChann
 
 void AAHandler::navigationStatusUpdate(const aasdk::proto::messages::NavigationStatus& navStatus)
 {
+    nav_status_ = navStatus;
     emit aa_navigation_status_update(navStatus);
 }
 void AAHandler::navigationTurnEvent(const aasdk::proto::messages::NavigationTurnEvent& turnEvent)
 {
+    nav_turn_ = turnEvent;
     emit aa_navigation_turn_event(turnEvent);
 }
 void AAHandler::navigationDistanceEvent(const aasdk::proto::messages::NavigationDistanceEvent& distanceEvent)
 {
+    nav_distance_ = distanceEvent;
     emit aa_navigation_distance_event(distanceEvent);
 }

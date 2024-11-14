@@ -11,6 +11,8 @@
 #include <QSlider>
 #include <QTextStream>
 
+#include <QVariant>
+
 #include "app/arbiter.hpp"
 #include "app/pages/camera.hpp"
 #include "app/pages/vehicle.hpp"
@@ -377,6 +379,12 @@ QWidget *Session::Forge::volume_slider(bool buttons) const
 Session::AndroidAuto::AndroidAuto(Arbiter &arbiter)
     : handler(new AAHandler())
 {
+    auto &server = arbiter.system().server;
+
+    server.register_handler("androidauto/nav", Server::StateHandler{
+        [this]{ return this->handler->get_nav_state(); },
+        [](QVariant){ /* read-only */ }
+    });
 
 }
 
