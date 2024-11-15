@@ -107,6 +107,13 @@ class Config : public QObject {
         this->settings.setValue("Pages/Camera/local_device", this->cam_local_device);
     }
 
+        inline const QString& get_cam_ccc_device() { return this->cam_ccc_device; }
+    inline void set_cam_ccc_device(QString ccc_device)
+    {
+        this->cam_ccc_device = ccc_device;
+        this->settings.setValue("Pages/Camera/ccc_device", this->cam_ccc_device);
+    }
+
     inline bool get_cam_is_network() { return this->cam_is_network; }
     inline void set_cam_is_network(bool is_network)
     {
@@ -191,6 +198,7 @@ class Config : public QObject {
     QString vehicle_plugin;
     QString cam_network_url;
     QString cam_local_device;
+    QString cam_ccc_device;
     bool cam_is_network;
     QVideoFrame::PixelFormat cam_local_format_override;
     bool cam_autoconnect;
