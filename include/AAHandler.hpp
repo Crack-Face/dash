@@ -37,9 +37,9 @@ class AAHandler : public QObject, public openauto::service::IAndroidAutoInterfac
         obj["roundaboutExitAngle"] = QString::number(static_cast<int>(nav_turn_.roundaboutexitangle()));
         obj["distanceEvent"] = QString::number(static_cast<int>(nav_distance_.meters()));
         //convert PNG to base64
-        //QByteArray imageBytes = QByteArray::fromStdString(nav_turn_.turnimage());
-        //QString base64Image = imageBytes.toBase64();
-        //obj["image"] = base64Image;
+        QByteArray imageBytes = QByteArray::fromStdString(nav_turn_.turnimage());
+        QString base64Image = imageBytes.toBase64();
+        obj["image"] = base64Image;
         return obj;
     }
 
