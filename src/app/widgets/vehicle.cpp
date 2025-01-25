@@ -128,6 +128,29 @@ void Vehicle::sensor(Position position, uint8_t level)
     }
 }
 
+void Vehicle::sensor_text(Position position, QString value) {
+    if (position & Position::FRONT) {
+        if (position & Position::LEFT)
+            this->vehicle->set_sensor_text("fl_sensor1_value", value);
+        if (position & Position::MIDDLE_LEFT)
+            this->vehicle->set_sensor_text("fml_sensor1_value", value);
+        if (position & Position::MIDDLE_RIGHT)
+            this->vehicle->set_sensor_text("fmr_sensor1_value", value);
+        if (position & Position::RIGHT)
+            this->vehicle->set_sensor_text("fr_sensor1_value", value);
+    }
+    if (position & Position::BACK) {
+        if (position & Position::LEFT)
+            this->vehicle->set_sensor_text("bl_sensor1_value", value);
+        if (position & Position::MIDDLE_LEFT)
+            this->vehicle->set_sensor_text("bml_sensor1_value", value);
+        if (position & Position::MIDDLE_RIGHT)
+            this->vehicle->set_sensor_text("bmr_sensor1_value", value);
+        if (position & Position::RIGHT)
+            this->vehicle->set_sensor_text("br_sensor1_value", value);
+    }
+}
+
 void Vehicle::wheel_steer(int16_t degree)
 {
     this->vehicle->set_wheel_steer(degree);

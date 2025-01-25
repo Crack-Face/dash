@@ -65,6 +65,5 @@ openauto.ini
 
 # Plugins #
 ###########
-plugins/vehicle/*
 !plugins/vehicle/test
 !plugins/vehicle/README.md

@@ -64,6 +64,7 @@ class VehicleState : public QFrame {
     void set_bml_sensor(uint8_t level);
     void set_bmr_sensor(uint8_t level);
     void set_br_sensor(uint8_t level);
+    void set_sensor_text(QString sensor_id, QString value);
 
     inline QColor get_base_color() { return this->base_color; };
     inline QColor get_headlight_color() { return this->headlight_color; };

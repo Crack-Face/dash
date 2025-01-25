@@ -13,7 +13,19 @@
 CCCPage::CCCPage(Arbiter &arbiter, QWidget *parent)
     : QWidget(parent)
     , Page(arbiter, "CCC", "ccc", true, this)
+    , arbiter(arbiter)
 {
+        // Connect to page change signal
+        connect(&arbiter, &Arbiter::pageChanged, this, [this](int pageId) {
+            // Only take action if crossing the page 3 boundary
+            if (pageId == 3 && previousPageId != 3) {
+                //g_usleep(200000);
+                connect_cam();
+            } else if (previousPageId == 3 && pageId != 3) {
+                disconnect_stream();
+            }
+            previousPageId = pageId;  // Update previous state
+        });
 }
 
 void CCCPage::init()
@@ -50,7 +62,7 @@ void CCCPage::init()
         QFile::remove("/tmp/dash_camera_overlay.svg");
     QFile::copy(":/camera_overlay.svg", "/tmp/dash_camera_overlay.svg");
 
-    connect_cam();
+    //connect_cam();
 }
 
 void CCCPage::showEvent(QShowEvent *event)
@@ -64,42 +76,33 @@ void CCCPage::showEvent(QShowEvent *event)
 void CCCPage::init_gstreamer_pipeline(std::string desc, bool sync)
 {
     videoWidget_ = new QQuickWidget(videoContainer_);
+    videoWidget_->setClearColor(QColor(18, 18, 18));
 
-    surface_ = new QGst::Quick::VideoSurface;
-    videoWidget_->rootContext()->setContextProperty(QLatin1String("videoSurface"), surface_);
-    videoWidget_->setSource(QUrl("qrc:/camera_video.qml"));
+    //surface_ = new QGst::Quick::VideoSurface;
+    //videoWidget_->rootContext()->setContextProperty(QLatin1String("videoSurface"), surface_);
+    //videoWidget_->setSource(QUrl("qrc:/camera_video.qml"));
     videoWidget_->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    
 
-    videoSink_ = surface_->videoSink();
+    //videoSink_ = surface_->videoSink();
 
     GError *error = nullptr;
     std::string pipeline = desc;
-    if (this->config->get_cam_overlay()) {
-        double width = this->config->get_cam_overlay_width() / 100.0;
-        double height = this->config->get_cam_overlay_height() / 100.0;
-        double x = (1 - width) / 2.0;
-        double y = (1 - height);
-        pipeline = pipeline +
-                   " ! videoconvert ! rsvgoverlay location=/tmp/dash_camera_overlay.svg width-relative=" + std::to_string(width) + " height-relative=" + std::to_string(height) + " x-relative=" + std::to_string(x) + " y-relative=" + std::to_string(y);
-    }
-    pipeline = pipeline +
-               " ! videoconvert " +
-               " ! capsfilter caps=video/x-raw name=mycapsfilter";
     DASH_LOG(info) << "[CCCPage] Created GStreamer Pipeline of `" << pipeline << "`";
     vidPipeline_ = gst_parse_launch(pipeline.c_str(), &error);
     GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(vidPipeline_));
     gst_bus_add_watch(bus, (GstBusFunc)&CCCPage::busCallback, this);
     gst_object_unref(bus);
 
-    GstElement *sink = QGlib::RefPointer<QGst::Element>(videoSink_);
-    g_object_set(sink, "force-aspect-ratio", false, nullptr);
-    g_object_set(sink, "sync", sync, nullptr);
+    //GstElement *sink = QGlib::RefPointer<QGst::Element>(videoSink_);
+    //g_object_set(sink, "force-aspect-ratio", false, nullptr);
+    //g_object_set(sink, "sync", sync, nullptr);
 
-    g_object_set(sink, "async", false, nullptr);
+    //g_object_set(sink, "async", false, nullptr);
 
-    GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
-    gst_bin_add(GST_BIN(vidPipeline_), GST_ELEMENT(sink));
-    gst_element_link(capsFilter, GST_ELEMENT(sink));
+    //GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
+    //gst_bin_add(GST_BIN(vidPipeline_), GST_ELEMENT(sink));
+    //gst_element_link(capsFilter, GST_ELEMENT(sink));
 }
 
 QWidget *CCCPage::connect_widget()
@@ -211,7 +214,7 @@ QPushButton *CCCPage::connect_button()
 void CCCPage::count_down()
 {
     this->reconnect_in_secs--;
-    this->status->setText(this->reconnect_message.arg(this->reconnect_in_secs) + ((this->reconnect_in_secs == 1) ? "second" : "seconds"));
+    this->status->setText(this->reconnect_message.arg(this->reconnect_in_secs) + ((this->reconnect_in_secs == 0) ? "second" : "seconds"));
     if (this->reconnect_in_secs == 0)
         this->connect_cam();
 }
@@ -298,12 +301,12 @@ void CCCPage::populate_local_cams()
     const QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
     for (auto const &cam : cameras) {
         QString pretty_name = cam.description() + " at " + cam.deviceName();
-        if (cam.description() == "HD Pro Webcam C920"){
+        if (cam.description() == "UGREEN Camera: UGREEN Camera"){
             this->local_cams.append(QPair<QString, QString>(pretty_name, cam.deviceName())); 
             this->config->set_cam_ccc_device(cam.deviceName()); 
         }
                 
-                //DASH_LOG(info) << "populate " << cam.description();    
+            //DASH_LOG(info) << "populate " << pretty_name;    
             //funktioniert. Es wird nur die Webcam angezeigt
     }
     
@@ -352,16 +355,16 @@ GstPadProbeReturn CCCPage::convertProbe(GstPad *pad, GstPadProbeInfo *info, void
 void CCCPage::disconnect_stream()
 {
     DASH_LOG(info) << "[CCCPage] Disconnecting camera and destroying gstreamer pipeline";
-    GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
-    GstPad *convertPad = gst_element_get_static_pad(capsFilter, "sink");
-    gst_pad_add_probe(convertPad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, &CCCPage::convertProbe, this, nullptr);
+    //GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
+    //GstPad *convertPad = gst_element_get_static_pad(capsFilter, "sink");
+    //gst_pad_add_probe(convertPad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, &CCCPage::convertProbe, this, nullptr);
     gst_element_set_state(vidPipeline_, GST_STATE_NULL);
     g_object_unref(vidPipeline_);
     if (this->config->get_cam_autoconnect()) {
         qDebug() << "Camera disconnected. Auto reconnect in" << this->config->get_cam_autoconnect_time_secs() << "seconds";
         this->reconnect_message = this->status->text() + " - reconnecting in %1 ";
         this->reconnect_in_secs = this->config->get_cam_autoconnect_time_secs();
-        this->reconnect_timer->start(1000);
+        //this->reconnect_timer->start(500);
     }
     this->connected = false;
 }
@@ -388,10 +391,25 @@ void CCCPage::connect_local_stream()
 
     QSize res = this->choose_video_resolution();
 
+
+    QSize screenSize = QGuiApplication::primaryScreen()->size();
+    int x = (screenSize.width() - res.width()) / 2;
+    int y = 0;
+    int width = res.width();
+    int height = res.height();
+
     DASH_LOG(info) << "[CCCPage] Creating GStreamer pipeline with " << this->config->get_cam_ccc_device().toStdString();
     std::string pipeline = "v4l2src device=" + this->config->get_cam_ccc_device().toStdString() +
-                           " ! capsfilter caps=\"video/x-raw,width=" + std::to_string(res.width()) + ",height=" + std::to_string(res.height()) + ";image/jpeg,width=" + std::to_string(res.width()) + ",height=" + std::to_string(res.height()) + "\"" +
-                           " ! decodebin";
+                           " ! capsfilter caps=\"video/x-raw,width=1481" + ",height=720" + ";image/jpeg,width=" + std::to_string(res.width()) + ",height=" + std::to_string(res.height()) + "\"" +
+                           " ! mppjpegdec ! mpph264enc ! h264parse ! mppvideodec format=RGB" +
+                           //" ! kmssink plane-id=79 skip-vsync=true render-rectangle=\"<320, 0, 1280, 720>\"";
+                           " ! kmssink plane-id=79 skip-vsync=true" +
+                           " render-rectangle=\"<" + 
+                            std::to_string(x) + ", " + 
+                            std::to_string(y) + ", " + 
+                            std::to_string(width) + ", " + 
+                            std::to_string(height) + ">\"";
+
     init_gstreamer_pipeline(pipeline);
     //emit the connected signal before we resize anything, so that videoContainer has had time to resize to the proper dimensions
     emit connected_local();
@@ -408,9 +426,9 @@ void CCCPage::connect_local_stream()
         videoWidget_->show();
     }
 
-    GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
-    GstPad *convertPad = gst_element_get_static_pad(capsFilter, "sink");
-    gst_pad_add_probe(convertPad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, &CCCPage::convertProbe, this, nullptr);
+    //GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
+    //GstPad *convertPad = gst_element_get_static_pad(capsFilter, "sink");
+    //gst_pad_add_probe(convertPad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, &CCCPage::convertProbe, this, nullptr);
     gst_element_set_state(vidPipeline_, GST_STATE_PLAYING);
 }
 
@@ -448,7 +466,7 @@ gboolean CCCPage::busCallback(GstBus *, GstMessage *message, gpointer *)
 
 QSize CCCPage::choose_video_resolution()
 {
-    QSize window_size = this->size();
+    QSize window_size(1280, 720);
     QCameraImageCapture imageCapture(this->local_cam);
     int min_gap = 10000, xgap, ygap;
     QSize max_fit;
@@ -492,12 +510,6 @@ bool CCCPage::local_cam_available(const QString &device)
     }
     return false;
 }
-
-
-
-
-
-
 
 
 

@@ -86,6 +86,15 @@ class CCCPage : public QWidget, public Page {
     void count_down();
     void connect_cam();
 
+//////////////////////////////////////////////////////////////////////////////////////
+    void handlePageChange(int pageId);
+    void setupPageChangeHandler();
+    static const int CCC_CAMERA_PAGE_ID = 3;  // Define the camera page ID constant
+    int previousPageId = -1;
+
+    Arbiter &arbiter;  // Add this line to the private section
+//////////////////////////////////////////////////////////////////////////////////////
+
     Config *config;
     QLabel *status;
     QMediaPlayer *player;

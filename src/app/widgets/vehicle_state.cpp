@@ -428,8 +428,13 @@ bool VehicleState::set_sensor(QString sensor, uint8_t level)
 
     bool changed = false;
 
-    for (int i = 1; i <= 4; i++)
+    for (int i = 1; i <= 5; i++)
         changed |= this->vehicle_ref.toggle(sensor + QString::number(i), i <= level);
 
     return changed;
+}
+
+void VehicleState::set_sensor_text(QString sensor_id, QString value) {
+    if (this->vehicle_ref.set_text(sensor_id, value))
+        this->update();
 }

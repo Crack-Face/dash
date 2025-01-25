@@ -77,4 +77,5 @@ class Arbiter : public QObject {
     void volume_changed(uint8_t volume);
     void cursor_changed(bool enabled);
     void action_changed(Action *action, QString key);
+    void pageChanged(int pageId);
 };

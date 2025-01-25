@@ -16,7 +16,6 @@
 #include "app/arbiter.hpp"
 #include "app/pages/camera.hpp"
 #include "app/pages/cccpage.hpp"
-#include "app/pages/vehicle.hpp"
 #include "app/pages/launcher.hpp"
 #include "app/pages/media.hpp"
 #include "app/pages/settings.hpp"
@@ -26,6 +25,7 @@
 #include "aasdk_proto/ButtonCodeEnum.pb.h"
 
 #include "app/session.hpp"
+
 
 QDir Session::plugin_dir(QString plugin)
 {
@@ -123,7 +123,6 @@ Session::Layout::Layout(QSettings &settings, Arbiter &arbiter)
     this->pages_ = {
         this->openauto_page,
         new MediaPage(arbiter),
-        new VehiclePage(arbiter),
         new CameraPage(arbiter),
         new CCCPage(arbiter),
         new LauncherPage(arbiter),

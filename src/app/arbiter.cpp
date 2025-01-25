@@ -95,6 +95,8 @@ void Arbiter::set_curr_page(Page *page)
         this->window_->set_fullscreen(page);
 
     emit curr_page_changed(page);
+    emit pageChanged(this->layout().page_id(page));  // Add this line to emit the page ID
+    
 }
 
 void Arbiter::set_curr_page(int id)
@@ -259,3 +261,4 @@ QMainWindow *Arbiter::window()
 {
     return this->window_;
 }
+

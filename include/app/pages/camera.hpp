@@ -36,7 +36,66 @@
 
 #include "app/pages/page.hpp"
 
+////////////////////////////////////////////////
+
+#include <QPair>
+#include <QtWidgets>
+#include <QPluginLoader>
+#include <QMap>
+
+#include "canbus/socketcanbus.hpp"
+#include "obd/message.hpp"
+#include "obd/command.hpp"
+#include "app/widgets/selector.hpp"
+#include "app/widgets/dialog.hpp"
+
+
+/////////////////////////////////////////////////
+
 class Arbiter;
+
+//////////////////////////////////////////////////////////
+
+typedef std::function<double(double, bool)> obd_decoder_t;
+typedef QPair<QString, QString> units_t;
+
+//////////////////////////////////////////////////////////
+
+/*
+class Gauge : public QWidget {
+    Q_OBJECT
+
+   public:
+    enum Orientation { BOTTOM, RIGHT };
+
+    Gauge(units_t units, QFont value_font, QFont unit_font, Orientation orientation, int rate,
+          std::vector<Command> cmds, int precision, obd_decoder_t decoder, QWidget *parent = nullptr);
+
+    inline void start() { this->timer->start(this->rate); }
+    inline void stop() { this->timer->stop(); }
+    void can_callback(QByteArray payload);
+
+   private:
+    QString format_value(double value);
+    QString null_value();
+    QLabel *value_label;
+
+    obd_decoder_t decoder;
+    std::vector<Command> cmds;
+
+    bool si;
+    int rate;
+    int precision;
+    QTimer *timer;
+
+   signals:
+    void toggle_unit(bool si);
+};
+
+*/
+
+
+
 
 class CameraPage : public QWidget, public Page {
     Q_OBJECT
@@ -47,6 +106,39 @@ class CameraPage : public QWidget, public Page {
     void init() override;
 
    private:
+    void get_plugins();
+    void load_plugin();
+    QWidget *dialog_body();
+    QWidget *can_bus_toggle_row();
+    QWidget *si_units_row_widget();
+
+    QMap<QString, int> capabilities;
+    QMap<QString, QFileInfo> plugins;
+    QStringList can_devices;
+    QStringList serial_devices;
+    QMap<QString, QString> paired_bt_devices;
+    QPluginLoader *active_plugin;
+    Selector *plugin_selector;
+    Config *config;
+
+    Arbiter &arbiter;
+    //QWidget *speedo_tach_widget();
+    // QWidget *mileage_data_widget();
+    //QWidget *engine_data_widget();
+    //QWidget *coolant_temp_widget();
+    //QWidget *engine_load_widget();
+
+    //std::vector<Gauge *> gauges;
+
+    QHBoxLayout* main_layout;  // Store the main layout
+    QWidget* plugin_container; // Container for plugin widgets
+    
+    void initializeLayout();
+    void integratePluginWidgets(const QList<QWidget*>& widgets);
+
+
+
+
     class VideoContainer : public QWidget {
        public:
         VideoContainer(QWidget *parent = nullptr, CameraPage *page = nullptr);
@@ -89,7 +181,17 @@ class CameraPage : public QWidget, public Page {
     void count_down();
     void connect_cam();
 
-    Config *config;
+//////////////////////////////////////////////////////////////////////////////////////
+    void handlePageChange(int pageId);
+    void setupPageChangeHandler();
+    static const int CCC_CAMERA_PAGE_ID = 3;  // Define the camera page ID constant
+    int previousPageId = -1;
+
+    //Arbiter &arbiter;  // Add this line to the private section
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+    //Config *config;
     QLabel *status;
     QMediaPlayer *player;
     QList<QPair<QString, QString>> local_cams;
@@ -127,3 +229,4 @@ class CameraPage : public QWidget, public Page {
     void next_cam();
     void prev_cam();
 };
+

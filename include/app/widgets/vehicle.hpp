@@ -44,6 +44,7 @@ class Vehicle : public QWidget {
     void disable_sensors();
     void sensor(Position position, uint8_t level);
     void wheel_steer(int16_t degree);
+    void sensor_text(Position position, QString value);
 
    private:
     VehicleState *vehicle;
