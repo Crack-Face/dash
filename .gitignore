@@ -5,6 +5,9 @@
 /lib
 /nbproject
 /cmake-build-debug
+/bluez-5.63
+/pulseaudio
+
 
 # Compiled source #
 ###################
