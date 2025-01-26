@@ -95,7 +95,7 @@ if [ $# -gt 0 ]; then
                                     ;;
             --aasdk )           aasdk=true
                                     ;;
-            --gstreamer )       gstreamer=true
+            --gstreamer )       gstreamer=false
                                     ;;
             --openauto )       openauto=true
                                     ;;
@@ -123,13 +123,13 @@ else
     echo -e Full install running'\n'
     deps=true
     aasdk=true
-    gstreamer=true
+    gstreamer=false
     openauto=true
     dash=true
     h264bitstream=true
-    pulseaudio=false
-    bluez=false
-    ofono=false
+    pulseaudio=true
+    bluez=true
+    ofono=true
     if [ $isRpi = true ]; then
       pulseaudio=true
       bluez=true
