@@ -95,7 +95,7 @@ if [ $# -gt 0 ]; then
                                     ;;
             --aasdk )           aasdk=true
                                     ;;
-            --gstreamer )       gstreamer=true
+            --gstreamer )       gstreamer=false
                                     ;;
             --openauto )       openauto=true
                                     ;;

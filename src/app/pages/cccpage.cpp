@@ -403,7 +403,7 @@ void CCCPage::connect_local_stream()
                            " ! capsfilter caps=\"video/x-raw,width=1481" + ",height=720" + ";image/jpeg,width=" + std::to_string(res.width()) + ",height=" + std::to_string(res.height()) + "\"" +
                            " ! mppjpegdec ! mpph264enc ! h264parse ! mppvideodec format=RGB" +
                            //" ! kmssink plane-id=79 skip-vsync=true render-rectangle=\"<320, 0, 1280, 720>\"";
-                           " ! kmssink plane-id=79 skip-vsync=true" +
+                           " ! kmssink plane-id=87 bus-id=display-subsystem skip-vsync=true" +
                            " render-rectangle=\"<" + 
                             std::to_string(x) + ", " + 
                             std::to_string(y) + ", " + 

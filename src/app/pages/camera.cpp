@@ -202,7 +202,8 @@ void CameraPage::init_gstreamer_pipeline(std::string desc, bool sync)
     //gst_bin_add(GST_BIN(vidPipeline_), GST_ELEMENT(sink));
     //gst_element_link(capsFilter, GST_ELEMENT(sink));
     GstElement* kmssink = gst_element_factory_make("kmssink", "kmssink");
-    g_object_set(G_OBJECT(kmssink), "plane-id", 79, nullptr);
+    g_object_set(G_OBJECT(kmssink), "plane-id", 87, nullptr);
+    g_object_set(G_OBJECT(kmssink), "bus-id", "display-subsystem", nullptr);
     g_object_set(G_OBJECT(kmssink), "skip-vsync", true , nullptr);
 
 
