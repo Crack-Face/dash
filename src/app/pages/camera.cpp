@@ -163,18 +163,16 @@ void CameraPage::init_gstreamer_pipeline(std::string desc, bool sync)
 {
     videoWidget_ = new QQuickWidget(videoContainer_);
     videoWidget_->setClearColor(QColor(18, 18, 18));
+    videoWidget_->rootContext()->setContextProperty(QLatin1String("videoSurface"), surface_);
+    videoWidget_->setResizeMode(QQuickWidget::SizeRootObjectToView);
 
     //surface_ = new QGst::Quick::VideoSurface;
-    videoWidget_->rootContext()->setContextProperty(QLatin1String("videoSurface"), surface_);
     //videoWidget_->setSource(QUrl("qrc:/camera_video.qml"));
-    videoWidget_->setResizeMode(QQuickWidget::SizeRootObjectToView);
-    
-
     //videoSink_ = surface_->videoSink();
 
     GError *error = nullptr;
     std::string pipeline = desc;
-    /*
+    //
     if (this->config->get_cam_overlay()) {
         double width = this->config->get_cam_overlay_width() / 100.0;
         double height = this->config->get_cam_overlay_height() / 100.0;
@@ -184,15 +182,15 @@ void CameraPage::init_gstreamer_pipeline(std::string desc, bool sync)
                    " ! videoconvert ! rsvgoverlay location=/tmp/dash_camera_overlay.svg width-relative=" + std::to_string(width) + " height-relative=" + std::to_string(height) + " x-relative=" + std::to_string(x) + " y-relative=" + std::to_string(y);
     }
     pipeline = pipeline +
-               " ! videoconvert ";
-    //" ! capsfilter caps=video/x-raw name=mycapsfilter";
+                " ! capsfilter caps=video/x-raw name=mycapsfilter";
     
-    */
-    DASH_LOG(info) << "[CameraPage] Created GStreamer Pipeline of `" << pipeline << "`";
-    vidPipeline_ = gst_parse_launch(pipeline.c_str(), &error);
-    GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(vidPipeline_));
-    gst_bus_add_watch(bus, (GstBusFunc)&CameraPage::busCallback, this);
-    gst_object_unref(bus);
+    
+    //DASH_LOG(info) << "[CameraPage] Created GStreamer Pipeline of `" << pipeline << "`";
+    //vidPipeline_ = gst_parse_launch(pipeline.c_str(), &error);
+    //GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(vidPipeline_));
+    //gst_bus_add_watch(bus, (GstBusFunc)&CameraPage::busCallback, this);
+    //gst_object_unref(bus);
+    //
 
     //GstElement *sink = QGlib::RefPointer<QGst::Element>(videoSink_);
     //g_object_set(sink, "force-aspect-ratio", false, nullptr);
@@ -203,6 +201,22 @@ void CameraPage::init_gstreamer_pipeline(std::string desc, bool sync)
     //GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
     //gst_bin_add(GST_BIN(vidPipeline_), GST_ELEMENT(sink));
     //gst_element_link(capsFilter, GST_ELEMENT(sink));
+    GstElement* kmssink = gst_element_factory_make("kmssink", "kmssink");
+    g_object_set(G_OBJECT(kmssink), "plane-id", 79, nullptr);
+    g_object_set(G_OBJECT(kmssink), "skip-vsync", true , nullptr);
+
+
+
+    DASH_LOG(info) << "[CameraPage] Created GStreamer Pipeline of `" << pipeline << "`";
+    vidPipeline_ = gst_parse_launch(pipeline.c_str(), &error);
+    GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(vidPipeline_));
+    gst_bus_add_watch(bus, (GstBusFunc)&CameraPage::busCallback, this);
+    gst_object_unref(bus);
+
+
+    GstElement* capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
+    gst_bin_add(GST_BIN(vidPipeline_), kmssink);
+    gst_element_link(capsFilter, kmssink);
 }
 
 QWidget *CameraPage::connect_widget()
@@ -704,24 +718,26 @@ void CameraPage::connect_local_stream()
 
     QSize screenSize = QGuiApplication::primaryScreen()->size();
     int x = 68;
-    int y = 0;
+    int y = -58;
     //int width = videoContainer_->width();
     //int height = videoContainer_->height();
     int width = 1480;
-    int height = 840;
+    int height = 836;
+    //int width = 1480;
+    //int height = 840;
 
     DASH_LOG(info) << "[CameraPage] Creating GStreamer pipeline with " << this->config->get_cam_local_device().toStdString();
     std::string pipeline = "v4l2src device=" + this->config->get_cam_local_device().toStdString() +
                            " ! capsfilter caps=\"video/x-raw,width=" + std::to_string(res.width()) + ",height=" + std::to_string(res.height()) + ";image/jpeg,width=" + std::to_string(res.width()) + ",height=" + std::to_string(res.height()) + "\"" +
-                           //" ! capsfilter caps=\"image/jpeg\"" +
-                           " ! mppjpegdec ! mpph264enc ! h264parse ! mppvideodec format=RGB" +
-                           //" ! kmssink plane-id=79 skip-vsync=true render-rectangle=\"<320, 0, 1280, 720>\"";
-                           " ! kmssink plane-id=79 skip-vsync=true" +
-                           " render-rectangle=\"<" + 
-                            std::to_string(x) + ", " + 
-                            std::to_string(y) + ", " + 
-                            std::to_string(width) + ", " + 
-                            std::to_string(height) + ">\"";
+                           " ! mppjpegdec ! mpph264enc ! h264parse ! mppvideodec format=BGRA";
+    //" ! rsvgoverlay location=/tmp/dash_camera_overlay.svg" +
+    //" ! capsfilter  name=mycapsfilter";
+    //" ! kmssink plane-id=79 skip-vsync=true" +
+    //" render-rectangle=\"<" +
+    // std::to_string(x) + ", " +
+    // std::to_string(y) + ", " +
+    // std::to_string(width) + ", " +
+    // std::to_string(height) + ">\"";
     init_gstreamer_pipeline(pipeline);
     //emit the connected signal before we resize anything, so that videoContainer has had time to resize to the proper dimensions
     emit connected_local();
@@ -741,6 +757,12 @@ void CameraPage::connect_local_stream()
     //GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
     //GstPad *convertPad = gst_element_get_static_pad(capsFilter, "sink");
     //gst_pad_add_probe(convertPad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM, &CameraPage::convertProbe, this, nullptr);
+    GstElement* kmssink = gst_bin_get_by_name(GST_BIN(vidPipeline_), "kmssink");
+    gst_video_overlay_set_render_rectangle(GST_VIDEO_OVERLAY(kmssink),
+        x,
+        y,
+        width,
+        height);
     gst_element_set_state(vidPipeline_, GST_STATE_PLAYING);
 }
 
@@ -778,7 +800,7 @@ gboolean CameraPage::busCallback(GstBus *, GstMessage *message, gpointer *)
 
 QSize CameraPage::choose_video_resolution()
 {
-    QSize window_size(1280, 720);
+    QSize window_size(1360, 768);
     //QSize window_size = this->size();
     QCameraImageCapture imageCapture(this->local_cam);
     int min_gap = 10000, xgap, ygap;
