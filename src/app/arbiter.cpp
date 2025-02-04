@@ -8,6 +8,7 @@ Arbiter::Arbiter(MainWindow *window)
     , window_(window)
     , session_(*this)
 {
+    setupSuspendDetection();
 }
 
 void Arbiter::set_mode(Session::Theme::Mode mode)
@@ -262,3 +263,22 @@ QMainWindow *Arbiter::window()
     return this->window_;
 }
 
+// In Arbiter.cpp
+void Arbiter::setupSuspendDetection() {
+    QDBusConnection::systemBus().connect(
+        "org.freedesktop.login1",
+        "/org/freedesktop/login1", 
+        "org.freedesktop.login1.Manager",
+        "PrepareForSleep",
+        this,
+        SLOT(handlePrepareForSleep(bool))
+    );
+}
+
+void Arbiter::handlePrepareForSleep(bool before) {
+    emit systemSuspending(before);
+    if (before) {
+        //layout().curr_page->onSuspend();
+        set_curr_page(0);
+    }
+}

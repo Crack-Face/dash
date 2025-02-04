@@ -13,6 +13,11 @@
 #include "app/widgets/fullscreen_toggler.hpp"
 #include "openauto/Service/InputService.hpp"
 
+#include <QDBusConnection>
+#include <QDBusInterface>
+#include <QDBusMessage>
+
+
 class MainWindow;
 
 class Arbiter : public QObject {
@@ -59,6 +64,10 @@ class Arbiter : public QObject {
    private:
     MainWindow *window_;
     Session session_;
+//////////////////////////////////////////////////////////
+    void setupSuspendDetection();
+    QDBusInterface* loginInterface;
+//////////////////////////////////////////////////////////
 
    signals:
     void mode_changed(Session::Theme::Mode mode);
@@ -78,4 +87,11 @@ class Arbiter : public QObject {
     void cursor_changed(bool enabled);
     void action_changed(Action *action, QString key);
     void pageChanged(int pageId);
+
+    private slots:
+    void handlePrepareForSleep(bool before);
+
+    signals:
+    void systemSuspending(bool before);
+
 };
