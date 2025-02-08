@@ -10,7 +10,12 @@
 
 #include "app/pages/camera.hpp"
 
-
+/////////////////////////
+#include <fcntl.h>
+#include <unistd.h>
+#include <xf86drm.h>
+#include <xf86drmMode.h>
+/////////////////////////
 
 
 #include <QPalette>
@@ -166,10 +171,6 @@ void CameraPage::init_gstreamer_pipeline(std::string desc, bool sync)
     videoWidget_->rootContext()->setContextProperty(QLatin1String("videoSurface"), surface_);
     videoWidget_->setResizeMode(QQuickWidget::SizeRootObjectToView);
 
-    //surface_ = new QGst::Quick::VideoSurface;
-    //videoWidget_->setSource(QUrl("qrc:/camera_video.qml"));
-    //videoSink_ = surface_->videoSink();
-
     GError *error = nullptr;
     std::string pipeline = desc;
     //
@@ -183,37 +184,34 @@ void CameraPage::init_gstreamer_pipeline(std::string desc, bool sync)
     }
     pipeline = pipeline +
                 " ! capsfilter caps=video/x-raw name=mycapsfilter";
+
     
+    // Get plane ID from DRM
+    int planeId = 93; // Default fallback
+    int fd = ::open("/dev/dri/card0", O_RDWR);  // Use global open() function
+    if (fd >= 0) {
+        drmModePlaneRes* planes = drmModeGetPlaneResources(fd);
+        if (planes && planes->count_planes > 1) {
+            drmModePlane* plane = drmModeGetPlane(fd, planes->planes[1]);
+            if (plane) {
+                planeId = plane->plane_id;
+                drmModeFreePlane(plane);
+            }
+            drmModeFreePlaneResources(planes);
+        }
+        ::close(fd);  // Also use global close()
+    }            
     
-    //DASH_LOG(info) << "[CameraPage] Created GStreamer Pipeline of `" << pipeline << "`";
-    //vidPipeline_ = gst_parse_launch(pipeline.c_str(), &error);
-    //GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(vidPipeline_));
-    //gst_bus_add_watch(bus, (GstBusFunc)&CameraPage::busCallback, this);
-    //gst_object_unref(bus);
-    //
-
-    //GstElement *sink = QGlib::RefPointer<QGst::Element>(videoSink_);
-    //g_object_set(sink, "force-aspect-ratio", false, nullptr);
-    //g_object_set(sink, "sync", sync, nullptr)//;
-
-    //g_object_set(sink, "async", false, nullptr);//
-
-    //GstElement *capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
-    //gst_bin_add(GST_BIN(vidPipeline_), GST_ELEMENT(sink));
-    //gst_element_link(capsFilter, GST_ELEMENT(sink));
     GstElement* kmssink = gst_element_factory_make("kmssink", "kmssink");
-    g_object_set(G_OBJECT(kmssink), "plane-id", 87, nullptr);
+    g_object_set(G_OBJECT(kmssink), "plane-id", planeId, nullptr);
     g_object_set(G_OBJECT(kmssink), "bus-id", "display-subsystem", nullptr);
     g_object_set(G_OBJECT(kmssink), "skip-vsync", true , nullptr);
-
-
 
     DASH_LOG(info) << "[CameraPage] Created GStreamer Pipeline of `" << pipeline << "`";
     vidPipeline_ = gst_parse_launch(pipeline.c_str(), &error);
     GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(vidPipeline_));
     gst_bus_add_watch(bus, (GstBusFunc)&CameraPage::busCallback, this);
     gst_object_unref(bus);
-
 
     GstElement* capsFilter = gst_bin_get_by_name(GST_BIN(vidPipeline_), "mycapsfilter");
     gst_bin_add(GST_BIN(vidPipeline_), kmssink);

@@ -25,7 +25,6 @@ class Bluetooth : public QObject {
     void start_scan();
     void stop_scan();
     void toggle_device(BluezQt::DevicePtr device) const;
-
     inline QList<BluezQt::DevicePtr> get_devices()
     {
         return this->has_adapter() ? this->adapter->devices() : QList<BluezQt::DevicePtr>();

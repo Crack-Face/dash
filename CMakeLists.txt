@@ -53,6 +53,7 @@ endif(RPI_BUILD AND NOT GST_BUILD)
 if(GST_BUILD)
     find_package(Qt5GStreamer)
     find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBDRM REQUIRED libdrm)
     pkg_check_modules(GST REQUIRED
         gstreamer-1.0>=1.4
         gstreamer-sdp-1.0>=1.4
@@ -115,6 +116,7 @@ target_include_directories(dash SYSTEM PRIVATE
     ${QTGSTREAMER_INCLUDE_DIR}
     ${TAGLIB_INCLUDE_DIRS}
     ${include_directory}
+    ${LIBDRM_INCLUDE_DIRS}
     )
 
 target_link_libraries(dash
@@ -149,6 +151,7 @@ target_link_libraries(dash
     ${QTGSTREAMER_QUICK_LIBRARIES}
     ${QTGSTREAMER_QUICK_LIBRARY}
     ${TAGLIB_LIBRARIES}
+    ${LIBDRM_LIBRARIES} 
     )
 
 install(TARGETS dash DESTINATION bin)

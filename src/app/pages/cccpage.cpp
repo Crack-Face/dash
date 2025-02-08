@@ -4,6 +4,14 @@
 #include <QCameraImageCapture>
 #include <QTimer>
 
+/////////////////////////
+#include <fcntl.h>
+#include <unistd.h>
+#include <xf86drm.h>
+#include <xf86drmMode.h>
+/////////////////////////
+
+
 #include "app/arbiter.hpp"
 #include "app/session.hpp"
 #include "app/window.hpp"
@@ -398,12 +406,32 @@ void CCCPage::connect_local_stream()
     int width = res.width();
     int height = res.height();
 
+    // Get plane ID from DRM
+    int planeId = 93; // Default fallback
+    int fd = ::open("/dev/dri/card0", O_RDWR);  // Use global open() function
+    if (fd >= 0) {
+        drmModePlaneRes* planes = drmModeGetPlaneResources(fd);
+        if (planes && planes->count_planes > 1) {
+            drmModePlane* plane = drmModeGetPlane(fd, planes->planes[1]);
+            if (plane) {
+                planeId = plane->plane_id;
+                drmModeFreePlane(plane);
+            }
+            drmModeFreePlaneResources(planes);
+        }
+        ::close(fd);  // Also use global close()
+    }  
+
+
+
     DASH_LOG(info) << "[CCCPage] Creating GStreamer pipeline with " << this->config->get_cam_ccc_device().toStdString();
     std::string pipeline = "v4l2src device=" + this->config->get_cam_ccc_device().toStdString() +
                            " ! capsfilter caps=\"video/x-raw,width=1481" + ",height=720" + ";image/jpeg,width=" + std::to_string(res.width()) + ",height=" + std::to_string(res.height()) + "\"" +
                            " ! mppjpegdec ! mpph264enc ! h264parse ! mppvideodec format=RGB" +
                            //" ! kmssink plane-id=79 skip-vsync=true render-rectangle=\"<320, 0, 1280, 720>\"";
-                           " ! kmssink plane-id=87 bus-id=display-subsystem skip-vsync=true" +
+                           " ! kmssink plane-id=" +
+                           std::to_string(planeId) +
+                           " bus-id=display-subsystem skip-vsync=true" +
                            " render-rectangle=\"<" + 
                             std::to_string(x) + ", " + 
                             std::to_string(y) + ", " + 

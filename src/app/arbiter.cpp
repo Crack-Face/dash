@@ -278,7 +278,9 @@ void Arbiter::setupSuspendDetection() {
 void Arbiter::handlePrepareForSleep(bool before) {
     emit systemSuspending(before);
     if (before) {
-        //layout().curr_page->onSuspend();
         set_curr_page(0);
-    }
+        } 
+    else {
+        //emit resumed();  // Emit when system wakes up
+        }
 }

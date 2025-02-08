@@ -104,6 +104,7 @@ void Bluetooth::update_media_player(BluezQt::DevicePtr device)
         emit media_player_track_changed(device->mediaPlayer()->track());
         emit media_player_changed(device->name(), device->mediaPlayer());
         this->media_player_device = device;
+        //this->last_connected_device = device;  // Store the last connected device
     }
     else if (this->media_player_device == device) {
         emit media_player_status_changed(BluezQt::MediaPlayer::Status::Paused);

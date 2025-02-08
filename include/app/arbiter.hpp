@@ -87,11 +87,10 @@ class Arbiter : public QObject {
     void cursor_changed(bool enabled);
     void action_changed(Action *action, QString key);
     void pageChanged(int pageId);
+    void systemSuspending(bool before);
 
     private slots:
     void handlePrepareForSleep(bool before);
 
-    signals:
-    void systemSuspending(bool before);
 
 };
